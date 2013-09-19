@@ -1,0 +1,18 @@
+# Object files
+*.o
+#.lo
+*.slo
+
+# Dynamic libraries
+*.so
+
+# Static libraries
+*.a
+*.la
+*.lai
+
+# OS modules
+*.ko
+
+# Patch
+ext3301-Makefile-prac.patch
