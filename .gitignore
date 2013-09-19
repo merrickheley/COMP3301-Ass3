@@ -16,3 +16,17 @@
 
 # Patch
 ext3301-Makefile-prac.patch
+
+# Commands
+.*.cmd
+
+# Test file system
+500K.img
+
+# Temp
+.tmp_versions
+
+# Compiled
+Module.symvers
+ext3301.mod.c
+modules.order
