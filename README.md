@@ -4,6 +4,8 @@ COMP3301 Assignment 3
 University of Queensland 2013 Semester 2 
 Merrick Heley
 
+This project uses user-mode linux to load the ext3301 file system.
+
 ## Makefile ##
     make all
 		make everything in the project
@@ -13,3 +15,6 @@ Merrick Heley
 		
 	make udbd
 		make a test file system that can be mounted
+		
+	make clean
+		clean the project directory
