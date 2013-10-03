@@ -9,8 +9,7 @@ ext3301-y := balloc.o dir.o file.o ialloc.o inode.o \
 
 MOD_DIR=/local/comp3301/linux-3.9.4
 
-.PHONY: all
-all: module udbd	
+all: module	
 	
 module: 
 	make -C $(MOD_DIR) M=$(PWD) ARCH=um modules
@@ -27,4 +26,4 @@ clean:
 	rm -f 500K.img
 	make -C $(MOD_DIR) M=$(PWD) ARCH=um clean
 	
-.PHONY: all clean module udbd
+.PHONY: all clean module udbd uml
