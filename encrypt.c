@@ -8,3 +8,4 @@
  *  directory of the ext3301 file system.
  */
 
+#include "encrypt.h"

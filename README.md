@@ -8,7 +8,7 @@ This project uses user-mode linux to load the ext3301 file system.
 
 ## Makefile ##
     make all
-		make everything in the project
+		calls "make module"
 	
 	make module
 		make the ext3301 file system

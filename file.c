@@ -24,6 +24,7 @@
 #include "ext2.h"
 #include "xattr.h"
 #include "acl.h"
+#include "encrypt.h"
 
 /*
  * Called when filp is released. This happens when all file descriptors

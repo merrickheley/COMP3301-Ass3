@@ -8,4 +8,10 @@
  *  directory of the ext3301 file system.
  */
 
+#include <linux/fs.h>
+
+/* Folder that will be encrypted */
 #define ENCRYPT_DIR "encrypt"
+
+/* Encryption key (8 bits only) */
+extern __u8 encrypt_key;
