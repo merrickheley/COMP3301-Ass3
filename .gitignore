@@ -33,4 +33,5 @@ modules.order
 
 # Eclipse
 .project
+.cproject
 

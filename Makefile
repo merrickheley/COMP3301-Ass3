@@ -20,7 +20,8 @@ udbd: module
 	mke2fs -F 500K.img
 	
 uml: udbd
-	cd ../uml && ./uml-kernel ubda=rootfs.ext2 mem=128m umid=comp3301 eth0=daemon ubdb=../ext3301/500K.img
+	cd ../uml && ./uml-kernel ubda=rootfs.ext2 mem=128m umid=comp3301 \
+								eth0=daemon ubdb=../ext3301/500K.img
 
 clean:
 	rm -f 500K.img
