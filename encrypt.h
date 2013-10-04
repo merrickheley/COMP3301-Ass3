@@ -15,3 +15,8 @@
 
 /* Encryption key (8 bits only) */
 extern __u8 encrypt_key;
+
+
+/* Function for encrypted write */
+ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
+		size_t len, loff_t *ppos);

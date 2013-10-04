@@ -9,3 +9,16 @@
  */
 
 #include "encrypt.h"
+
+#include <linux/fs.h>
+
+/**
+ * Encrypted write
+ *
+ *
+ */
+ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
+		size_t len, loff_t *ppos) {
+
+	return do_sync_write(filp, buf, len, ppos);
+}
