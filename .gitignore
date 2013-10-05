@@ -34,4 +34,4 @@ modules.order
 # Eclipse
 .project
 .cproject
-
+.settings/
