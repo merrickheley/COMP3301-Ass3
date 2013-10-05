@@ -12,6 +12,8 @@
 
 #include <linux/fs.h>
 
+__u8 encrypt_key = 0;
+
 /**
  * Encrypted write
  *
