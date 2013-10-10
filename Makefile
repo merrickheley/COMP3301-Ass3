@@ -23,8 +23,12 @@ uml: udbd
 	cd ../uml && ./uml-kernel ubda=rootfs.ext2 mem=128m umid=comp3301 \
 								eth0=daemon ubdb=../ext3301/500K.img
 
+kill:
+	# 
+	ps aux | grep $(USER) | grep kernel | head -n -1 | cut -c10-14 | while read pid; do echo $$pid; kill -9 $$pid; done
+
 clean:
 	rm -f 500K.img
 	make -C $(MOD_DIR) M=$(PWD) ARCH=um clean
 	
-.PHONY: all clean module udbd uml
+.PHONY: all clean module udbd uml kill
