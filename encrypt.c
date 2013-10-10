@@ -77,3 +77,20 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 
     return ret;
 }
+
+/**
+ * Encrypted read
+ *
+ * Calls do_sync_read, but if a key is set and the file is within
+ * ENCRYPT_DIR the buffer is decrypted with encrypt_key before read.
+ *
+ * filp : File to be written to
+ * buf  : Buffer to write to the file
+ * len  : Length of write to the file
+ * ppos : Position of write
+ */
+ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
+        size_t len, loff_t *ppos) {
+
+    return do_sync_read(filp, buf, len, ppos);
+}
