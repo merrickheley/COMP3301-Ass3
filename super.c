@@ -589,8 +589,8 @@ static int parse_options(char *options, struct super_block *sb)
 		case Opt_key:
 		    if (match_hex(&args[0], &option))
 		        return 0;
-		    encrypt_key = option % 16;
-		    ext2_msg(sb, KERN_INFO, "encryption key set %01X", encrypt_key);
+		    encrypt_key = option % 256;
+		    ext2_msg(sb, KERN_INFO, "encryption key set %02X", encrypt_key);
 		    break;
 		case Opt_ignore:
 			break;
