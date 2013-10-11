@@ -19,6 +19,22 @@
 __u8 encrypt_key = 0;
 
 /**
+ * is_parent_encrypt
+ *
+ * Returns '1' if ENCRYPT_DIR is an ancestor of folder, '0' otherwise
+ */
+int is_encrypt_ancestor(struct dentry *folder) {
+
+    /* Iterate up to folder below root */
+    while (strncmp(folder->d_parent->d_name.name, "/", 2) != 0) {
+        folder = folder->d_parent;
+    }
+
+    return !strncmp(folder->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1);
+}
+
+
+/**
  * Encrypted write
  *
  * Calls do_sync_write, but if a key is set and the file is within
@@ -33,19 +49,13 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 		size_t len, loff_t *ppos) {
 
     struct super_block *sb = filp->f_inode->i_sb;
-    struct dentry *folder = filp->f_dentry;
     char *encryptedBuf = 0;
     size_t i = 0;
     size_t ret;
     mm_segment_t oldFs;
 
-    /* Iterate up to folder below root */
-    while (strncmp(folder->d_parent->d_name.name, "/", 2) != 0) {
-        folder = folder->d_parent;
-    }
-
     /* File is within the encrypt dir */
-    if (strncmp(folder->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1) == 0) {
+    if (is_encrypt_ancestor(filp->f_dentry)) {
 
         ext2_msg(sb, KERN_DEBUG, "%s resides in /encrypt. Encrypting.", filp->f_dentry->d_name.name);
 
@@ -93,19 +103,13 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
         size_t len, loff_t *ppos) {
 
     struct super_block *sb = filp->f_inode->i_sb;
-    struct dentry *folder = filp->f_dentry;
     char *decryptedBuf;
     size_t i = 0;
     size_t ret;
     mm_segment_t oldFs;
 
-    /* Iterate up to folder below root */
-    while (strncmp(folder->d_parent->d_name.name, "/", 2) != 0) {
-        folder = folder->d_parent;
-    }
-
     /* File is within the encrypt dir */
-    if (strncmp(folder->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1) == 0) {
+    if (is_encrypt_ancestor(filp->f_dentry)) {
 
         ext2_msg(sb, KERN_DEBUG, "%s resides in /encrypt. Decrypting.", filp->f_dentry->d_name.name);
 
