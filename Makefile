@@ -24,8 +24,7 @@ uml: udbd
 								eth0=daemon ubdb=../ext3301/500K.img
 
 kill:
-	# 
-	ps aux | grep $(USER) | grep kernel | head -n -1 | cut -c10-14 | while read pid; do echo $$pid; kill -9 $$pid; done
+	pkill -U$(USER) uml-kernel
 
 clean:
 	rm -f 500K.img
