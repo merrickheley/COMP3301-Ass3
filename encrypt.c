@@ -34,18 +34,10 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 
     struct super_block *sb = filp->f_inode->i_sb;
     struct dentry *folder = filp->f_dentry;
-    char *encryptedBuf;
+    char *encryptedBuf = 0;
     size_t i = 0;
     size_t ret;
     mm_segment_t oldFs;
-
-    /* Allocate memory for the buffer */
-    if ((encryptedBuf = kmalloc(len, GFP_NOFS)) == 0) {
-        ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
-    }
-
-    /* Get the buffer */
-    copy_from_user(encryptedBuf, __user buf, len);
 
     /* Iterate up to folder below root */
     while (strncmp(folder->d_parent->d_name.name, "/", 2) != 0) {
@@ -54,6 +46,14 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 
     /* File is within the encrypt dir */
     if (strncmp(folder->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1) == 0) {
+
+        /* Allocate memory for the buffer */
+        if ((encryptedBuf = kmalloc(len, GFP_NOFS)) == 0) {
+            ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
+        }
+
+        /* Get the buffer */
+        copy_from_user(encryptedBuf, __user buf, len);
 
         ext2_msg(sb, KERN_DEBUG, "%s resides in /encrypt. Encrypting.", filp->f_dentry->d_name.name);
 
@@ -69,11 +69,11 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
         ret = do_sync_write(filp, encryptedBuf, len, ppos);
         set_fs(oldFs);
 
+        kfree(encryptedBuf);
+
     } else {
         ret = do_sync_write(filp, buf, len, ppos);
     }
-
-    kfree(encryptedBuf);
 
     return ret;
 }
