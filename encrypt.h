@@ -16,6 +16,8 @@
 /* Encryption key (8 bits only) */
 extern __u8 encrypt_key;
 
+/* Function for checking if dentry is a child of ENCRYPT_DIR */
+int is_encrypt_ancestor(struct dentry *folder);
 
 /* Function for encrypted write */
 ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
@@ -24,3 +26,6 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 /* Function for encrypted read */
 ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
         size_t len, loff_t *ppos);
+
+/* En/De-crypt the data stored in a file */
+void crypt_block(struct dentry *dir);

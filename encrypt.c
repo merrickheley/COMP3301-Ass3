@@ -13,8 +13,12 @@
 #include "ext2.h"
 
 #include <asm/uaccess.h>
+#include <linux/file.h>
 #include <linux/fs.h>
+#include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/limits.h>
+#include <linux/dcache.h>
 
 __u8 encrypt_key = 0;
 
@@ -23,16 +27,16 @@ __u8 encrypt_key = 0;
  *
  * Returns '1' if ENCRYPT_DIR is an ancestor of folder, '0' otherwise
  */
-int is_encrypt_ancestor(struct dentry *folder) {
+int is_encrypt_ancestor(struct dentry *dir) {
 
     /* Iterate up to folder below root */
-    while (strncmp(folder->d_parent->d_name.name, "/", 2) != 0) {
-        folder = folder->d_parent;
+//    while (strncmp(dir->d_parent->d_name.name, "/", 2) != 0) {
+    while (!IS_ROOT(dir->d_parent)) {
+        dir = dir->d_parent;
     }
 
-    return !strncmp(folder->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1);
+    return !strncmp(dir->d_name.name, ENCRYPT_DIR, strlen(ENCRYPT_DIR)+1);
 }
-
 
 /**
  * Encrypted write
@@ -57,7 +61,7 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
     /* File is within the encrypt dir */
     if (is_encrypt_ancestor(filp->f_dentry)) {
 
-        ext2_msg(sb, KERN_DEBUG, "%s resides in /encrypt. Encrypting.", filp->f_dentry->d_name.name);
+        ext2_debug("%s resides in /encrypt. Encrypting.", filp->f_dentry->d_name.name);
 
         /* Allocate memory for the buffer */
         if ((encryptedBuf = kmalloc(len, GFP_NOFS)) == 0) {
@@ -111,7 +115,7 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
     /* File is within the encrypt dir */
     if (is_encrypt_ancestor(filp->f_dentry)) {
 
-        ext2_msg(sb, KERN_DEBUG, "%s resides in /encrypt. Decrypting.", filp->f_dentry->d_name.name);
+        ext2_debug("%s resides in /encrypt. Decrypting.", filp->f_dentry->d_name.name);
 
         /* Allocate memory for the buffer */
         if ((decryptedBuf = kmalloc(len, GFP_NOFS)) == 0) {
@@ -139,4 +143,40 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
     }
 
     return ret;
+}
+
+/**
+ * Crypt block
+ *
+ * Toggle encryption for the data stored in a file. This is used if the file
+ * is moved to/from ENCRYPT_DIR.
+ *
+ * dir : Directory of file to be encrypted/decrypted
+ */
+void crypt_block(struct dentry *dir) {
+
+    char *pathBuf;
+    char *path;
+    struct super_block *sb = dir->d_sb;
+    struct file *file;
+    struct path filepath;
+
+    /* Allocate memory for the buffer */
+    if ((pathBuf = kmalloc(PATH_MAX, GFP_NOFS)) == 0) {
+        ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
+    }
+
+    path = dentry_path_raw(dir, pathBuf, PATH_MAX);
+
+    ext2_msg(sb, KERN_INFO, "Path: %s", path);
+
+    file = filp_open(path, O_RDWR, dir->d_inode->i_mode);
+
+    if (IS_ERR(file) || (file == NULL)) {
+        ext2_msg(sb, KERN_INFO, "File open failed %s");
+    } else {
+        ext2_msg(sb, KERN_INFO, "File open success");
+    }
+
+    kfree(pathBuf);
 }
