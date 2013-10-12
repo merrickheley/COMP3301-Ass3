@@ -308,6 +308,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 	struct page * old_page;
 	struct ext2_dir_entry_2 * old_de;
 	int err = -ENOENT;
+	int oldEncryptAncestor = 0;
+	int newEncryptAncestor = 0;
 
 	dquot_initialize(old_dir);
 	dquot_initialize(new_dir);
@@ -348,8 +350,12 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 			inode_inc_link_count(new_dir);
 	}
 
+	oldEncryptAncestor = is_encrypt_ancestor(old_dentry);
+	newEncryptAncestor = is_encrypt_ancestor(new_dentry);
+
 	/* Check if either folder is within ENCRYPT_DIR */
-	if (is_encrypt_ancestor(old_dentry) || is_encrypt_ancestor(new_dentry)) {
+	if ((oldEncryptAncestor && !newEncryptAncestor) ||
+	        (!oldEncryptAncestor && newEncryptAncestor)) {
 	    ext2_msg(old_dir->i_sb, KERN_INFO, "Moving between encrypt folder");
 
 	    crypt_block(old_dentry);
