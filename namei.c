@@ -356,9 +356,9 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 	/* Check if either folder is within ENCRYPT_DIR */
 	if ((oldEncryptAncestor && !newEncryptAncestor) ||
 	        (!oldEncryptAncestor && newEncryptAncestor)) {
-	    ext2_msg(old_dir->i_sb, KERN_INFO, "Moving between encrypt folder");
+	    ext2_debug("Moving between encrypt folder");
 
-	    crypt_block(old_dentry);
+	    crypt_block(old_inode);
 	}
 
 	/*

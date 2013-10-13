@@ -17,8 +17,7 @@
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/limits.h>
-#include <linux/dcache.h>
+#include <linux/pagemap.h>
 
 __u8 encrypt_key = 0;
 
@@ -151,32 +150,30 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
  * Toggle encryption for the data stored in a file. This is used if the file
  * is moved to/from ENCRYPT_DIR.
  *
- * dir : Directory of file to be encrypted/decrypted
+ * inode : Directory of file to be encrypted/decrypted
  */
-void crypt_block(struct dentry *dir) {
+void crypt_block(struct inode *inode) {
 
-    char *pathBuf;
-    char *path;
-    struct super_block *sb = dir->d_sb;
-    struct file *file;
-    struct path filepath;
+    struct page *page;
+    struct address_space *mapping = inode->i_mapping;
+    char *pageAddr;
+    pgoff_t i, j;
 
-    /* Allocate memory for the buffer */
-    if ((pathBuf = kmalloc(PATH_MAX, GFP_NOFS)) == 0) {
-        ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
+    /* For each page */
+    for (i = 0; i < mapping->nrpages; i++) {
+
+        /* Find the page, lock it, and get the page address */
+        page = find_lock_page(mapping, i);
+        pageAddr = (char *) page_address(page);
+
+        /* Crypt each byte in the page, using j as an offset */
+        for(j = 0; j < PAGE_CACHE_SIZE; j++) {
+            *(pageAddr + j) ^= encrypt_key;
+        }
+
+        unlock_page(page);
+        kunmap(page);
+        page_cache_release(page);
     }
 
-    path = dentry_path_raw(dir, pathBuf, PATH_MAX);
-
-    ext2_msg(sb, KERN_INFO, "Path: %s", path);
-
-    file = filp_open(path, O_RDWR, dir->d_inode->i_mode);
-
-    if (IS_ERR(file) || (file == NULL)) {
-        ext2_msg(sb, KERN_INFO, "File open failed %s");
-    } else {
-        ext2_msg(sb, KERN_INFO, "File open success");
-    }
-
-    kfree(pathBuf);
 }

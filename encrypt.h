@@ -28,4 +28,4 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
         size_t len, loff_t *ppos);
 
 /* En/De-crypt the data stored in a file */
-void crypt_block(struct dentry *dir);
+void crypt_block(struct inode *inode);
