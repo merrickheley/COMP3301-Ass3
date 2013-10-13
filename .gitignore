@@ -30,3 +30,8 @@ ext3301-Makefile-prac.patch
 Module.symvers
 ext3301.mod.c
 modules.order
+
+# Eclipse
+.project
+.cproject
+.settings/
