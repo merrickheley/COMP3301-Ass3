@@ -1,0 +1,35 @@
+#Encrypted file test
+mount none /mnt/host -t hostfs -o /home/students/s4233991
+insmod /mnt/host/courses/COMP3301/ext3301/ext3301.ko
+mkdir -p /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=cafe
+cd /mnt
+# Make the directories
+mkdir ext3301/temp
+mkdir ext3301/encrypt
+# Create some files
+echo "check normal file" > ext3301/temp/raw.file
+echo "check encrypt" > ext3301/encrypt/enc.file
+# Display the files
+cat ext3301/temp/raw.file
+cat ext3301/encrypt/enc.file
+# Swap to a different key
+umount /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=dead
+# Check the files still read correctly
+cat ext3301/temp/raw.file
+cat ext3301/encrypt/enc.file
+# Check file move works
+echo "check file move" > ext3301/encrypt/move.file
+mv ext3301/encrypt/move.file ext3301/temp/move.file
+cat ext3301/temp/move.file
+# Check it works for long files
+cp host/long.file ext3301/temp/long.file
+mv ext3301/temp/long.file ext3301/encrypt/long.file
+diff host/long.file ext3301/encrypt/long.file
+# Check a copy after a changed key gives different data
+cp ext3301/encrypt/long.file ext3301/temp/long.file
+umount /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=cafe
+cat ext3301/encrypt/long.file
+cat ext3301/temp/long.file
