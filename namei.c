@@ -36,6 +36,7 @@
 #include "xattr.h"
 #include "acl.h"
 #include "xip.h"
+#include "immediate.h"
 
 static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
 {
@@ -100,6 +101,12 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 
 	dquot_initialize(dir);
 
+	/* Flag all regular created files as immediate */
+	if (S_ISREG(mode)) {
+	    mode ^= S_IFREG;
+	    mode |= S_IFIM;
+	}
+
 	inode = ext2_new_inode(dir, mode, &dentry->d_name);
 	if (IS_ERR(inode))
 		return PTR_ERR(inode);
@@ -113,8 +120,9 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 		inode->i_fop = &ext2_file_operations;
 	} else {
 		inode->i_mapping->a_ops = &ext2_aops;
-		inode->i_fop = &ext2_file_operations;
+		inode->i_fop = &ext2_immediate_file_operations;
 	}
+
 	mark_inode_dirty(inode);
 	return ext2_add_nondir(dentry, inode);
 }
