@@ -116,17 +116,6 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 	inode->i_fop = &ext2_immediate_file_operations;
 	i_size_write(inode, 0);
 
-//	if (ext2_use_xip(inode->i_sb)) {
-//		inode->i_mapping->a_ops = &ext2_aops_xip;
-//		inode->i_fop = &ext2_xip_file_operations;
-//	} else if (test_opt(inode->i_sb, NOBH)) {
-//		inode->i_mapping->a_ops = &ext2_nobh_aops;
-//		inode->i_fop = &ext2_file_operations;
-//	} else {
-//		inode->i_mapping->a_ops = &ext2_aops;
-//		inode->i_fop = &ext2_file_operations;
-//	}
-
 	mark_inode_dirty(inode);
 	return ext2_add_nondir(dentry, inode);
 }

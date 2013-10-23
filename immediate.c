@@ -13,6 +13,59 @@
 #include <linux/slab.h>
 
 #include "ext2.h"
+#include "xip.h"
+
+/**
+ * Grow immediate
+ *
+ * Grow an immediate file to a regular file if the immediate file no longer
+ * has enough storage space for the data.
+ *
+ * filp : File to be written to
+ * buf  : Buffer to write to the file
+ * len  : Length of write to the file
+ * ppos : Position of write
+ */
+ssize_t grow_immediate(struct file *filp, const char __user *buf,
+        size_t len, loff_t *ppos) {
+
+    struct inode *inode = filp->f_dentry->d_inode;
+    char moveBuf[IM_SIZE];
+    loff_t moveSize = i_size_read(inode);
+    int errp = 0;
+    loff_t writePos = 0;
+
+    memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
+
+    /* Set the mode */
+    inode->i_mode ^= S_IFIM;
+    inode->i_mode |= S_IFREG;
+
+    /* Set the inode operations, taken straight from original ext2_create */
+    if (ext2_use_xip(inode->i_sb)) {
+      inode->i_mapping->a_ops = &ext2_aops_xip;
+      inode->i_fop = &ext2_xip_file_operations;
+    } else if (test_opt(inode->i_sb, NOBH)) {
+      inode->i_mapping->a_ops = &ext2_nobh_aops;
+      inode->i_fop = &ext2_file_operations;
+    } else {
+      inode->i_mapping->a_ops = &ext2_aops;
+      inode->i_fop = &ext2_file_operations;
+    }
+
+    /* Reset the file operations */
+    filp->f_op = inode->i_fop;
+
+    /* Initialise a new block */
+    ext2_init_block_alloc_info(inode);
+    EXT2_I(inode)->i_data[0] = ext2_new_block(inode, 0, &errp);
+
+    mark_inode_dirty(inode);
+
+    /* Write the old data, and the new data */
+    do_sync_write(filp, moveBuf, moveSize, &writePos);
+    return do_sync_write(filp, buf, len, ppos);
+}
 
 /**
  * Immediate write
@@ -32,6 +85,11 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     struct inode *inode = filp->f_dentry->d_inode;
     char *sink = (char *) EXT2_I(inode)->i_data;
     loff_t writePos;
+
+    /* Grow the file if the new data is too large */
+    if (i_size_read(inode) + len > IM_SIZE) {
+        return grow_immediate(filp, buf, len, ppos);
+    }
 
     /* Find the write position */
     if (filp->f_flags & O_APPEND) {
@@ -77,7 +135,7 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     loff_t size = i_size_read(inode);
 
     /* Invalid read */
-    if (*ppos >= IM_SIZE) {
+    if (*ppos >= size) {
         return 0;
     }
 
