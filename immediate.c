@@ -35,7 +35,7 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
 
     /* Find the write position */
     if (filp->f_flags & O_APPEND) {
-        writePos = inode->i_size;
+        writePos = i_size_read(inode);
     } else {
         writePos = *ppos;
     }
@@ -43,12 +43,15 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     /* Copy the data into the inode sink */
     copy_from_user(sink + writePos, __user buf, len);
 
-    /* Track the size of the inode */
-    /* Look at using i_size_read and i_size_write?? */
-    inode->i_size += len;
-
     /* Increment file pointer */
+    *ppos = i_size_read(inode);
     *ppos += len;
+
+    /* Track the size of the inode */
+    i_size_write(inode, *ppos);
+
+    /* Mark the inode as dirty */
+    mark_inode_dirty(inode);
 
     return len;
 }
@@ -71,17 +74,18 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     char *sink = (char *) EXT2_I(inode)->i_data;
     char *sinkBuf;
     size_t rlen = 0;
+    loff_t size = i_size_read(inode);
 
     /* Invalid read */
-    if (*ppos >= inode->i_size) {
+    if (*ppos >= IM_SIZE) {
         return 0;
     }
 
     /* Ensure we don't try and read outside the inode */
-    if (len < inode->i_size - *ppos) {
+    if (len < size - *ppos) {
         rlen = len;
     } else {
-        rlen = inode->i_size - *ppos;
+        rlen = size - *ppos;
     }
 
     /* Allocate memory for the buffer */
@@ -93,7 +97,7 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     memcpy(sinkBuf, sink + *ppos, rlen);
     sinkBuf[rlen] = 0;
 
-    copy_to_user(buf, sinkBuf, rlen + 1);
+    copy_to_user(__user buf, sinkBuf, rlen + 1);
 
     /* Increment file pointer */
     *ppos += rlen;
