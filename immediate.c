@@ -63,7 +63,7 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
  * len  : Length of write to the file
  * ppos : Position of write
  */
-ssize_t do_sync_immediate_read(struct file *filp, const char __user *buf,
+ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
                 size_t len, loff_t *ppos) {
 
     struct super_block *sb = filp->f_dentry->d_inode->i_sb;
@@ -73,8 +73,9 @@ ssize_t do_sync_immediate_read(struct file *filp, const char __user *buf,
     size_t rlen = 0;
 
     /* Invalid read */
-    if (*ppos >= inode->i_size)
+    if (*ppos >= inode->i_size) {
         return 0;
+    }
 
     /* Ensure we don't try and read outside the inode */
     if (len < inode->i_size - *ppos) {
@@ -92,7 +93,7 @@ ssize_t do_sync_immediate_read(struct file *filp, const char __user *buf,
     memcpy(sinkBuf, sink + *ppos, rlen);
     sinkBuf[rlen] = 0;
 
-    copy_to_user((void *) buf, sinkBuf, rlen + 1);
+    copy_to_user(buf, sinkBuf, rlen + 1);
 
     /* Increment file pointer */
     *ppos += rlen;

@@ -11,9 +11,9 @@
 #include <linux/fs.h>
 
 /* Immediate file number */
-#define DT_IM 5
+#define DT_IM 9
 
-#define S_IFIM   0050000
+#define S_IFIM   0110000
 #define S_ISIM(m)      (((m) & S_IFMT) == S_IFIM)
 
 /* Maximum size of immediate files */
@@ -24,5 +24,5 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
                 size_t len, loff_t *ppos);
 
 /* Function for immediate read */
-ssize_t do_sync_immediate_read(struct file *filp, const char __user *buf,
+ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
                 size_t len, loff_t *ppos);
