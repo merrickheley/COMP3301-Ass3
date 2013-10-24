@@ -26,3 +26,7 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
 /* Function for immediate read */
 ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
                 size_t len, loff_t *ppos);
+
+/* Function for wrapping generic write */
+ssize_t do_sync_generic_write(struct file *filp, const char __user *buf,
+                size_t len, loff_t *ppos);

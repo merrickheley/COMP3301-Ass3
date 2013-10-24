@@ -32,7 +32,6 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     struct inode *inode = filp->f_dentry->d_inode;
     char moveBuf[IM_SIZE];
     loff_t moveSize = i_size_read(inode);
-    int errp = 0;
     loff_t writePos = 0;
 
     memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
@@ -53,14 +52,11 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
       inode->i_fop = &ext2_file_operations;
     }
 
+    /* Mark the inode as dirty */
+    mark_inode_dirty(inode);
+
     /* Reset the file operations */
     filp->f_op = inode->i_fop;
-
-    /* Initialise a new block */
-    ext2_init_block_alloc_info(inode);
-    EXT2_I(inode)->i_data[0] = ext2_new_block(inode, 0, &errp);
-
-    mark_inode_dirty(inode);
 
     /* Write the old data, and the new data */
     do_sync_write(filp, moveBuf, moveSize, &writePos);
@@ -163,4 +159,29 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     kfree(sinkBuf);
 
     return rlen;
+}
+
+/**
+ * Generic write
+ *
+ * Check if an immediate file is getting a sync_write command. If so,
+ *
+ * filp : File to be written to
+ * buf  : Buffer to write to the file
+ * len  : Length of write to the file
+ * ppos : Position of write
+ */
+ssize_t do_sync_generic_write(struct file *filp, const char __user *buf,
+                size_t len, loff_t *ppos) {
+
+    /* If an immediate file finds its way here, change the file operations
+     * and do an immediate write */
+    if (S_ISIM(filp->f_dentry->d_inode->i_mode)) {
+
+        filp->f_op = filp->f_dentry->d_inode->i_fop;
+        return do_sync_immediate_write(filp, buf, len, ppos);
+    } else {
+        return do_sync_write(filp, buf, len, ppos);
+    }
+
 }

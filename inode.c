@@ -1094,12 +1094,37 @@ static void __ext2_truncate_blocks(struct inode *inode, loff_t offset)
 	int n;
 	long iblock;
 	unsigned blocksize;
-	blocksize = inode->i_sb->s_blocksize;
-	iblock = (offset + blocksize-1) >> EXT2_BLOCK_SIZE_BITS(inode->i_sb);
+	loff_t oldOffset = offset;
+	char buf[IM_SIZE] = {0};
+	char *sink = (char *) EXT2_I(inode)->i_data;
+    struct page *page;
+    struct address_space *mapping = inode->i_mapping;
+    char *pageAddr;
+
+    blocksize = inode->i_sb->s_blocksize;
+    iblock = (offset + blocksize-1) >> EXT2_BLOCK_SIZE_BITS(inode->i_sb);
 
 	n = ext2_block_to_path(inode, iblock, offsets, NULL);
 	if (n == 0)
 		return;
+
+    /* If this is a regular file being truncated to an immediate file,
+     * truncate everything away and save the data.
+     */
+    if (S_ISREG(inode->i_mode) && (offset < IM_SIZE) && (offset > 0)) {
+        offset = 0;
+
+        /* Find the page, lock it, and get the page address */
+        page = find_lock_page(mapping, 0);
+        pageAddr = (char *) page_address(page);
+
+        /* Copy the pre-truncated data from the page */
+        memcpy(buf, pageAddr, oldOffset);
+
+        unlock_page(page);
+        kunmap(page);
+        page_cache_release(page);
+    }
 
 	/*
 	 * From here we block out all ext2_get_block() callers who want to
@@ -1163,6 +1188,18 @@ do_indirects:
 	ext2_discard_reservation(inode);
 
 	mutex_unlock(&ei->truncate_mutex);
+
+	/* Change the file to an immediate file, and add the data that was
+	 * not truncated to it */
+	if (S_ISREG(inode->i_mode) && offset == 0)  {
+	    inode->i_fop = &ext2_immediate_file_operations;
+	    i_size_write(inode, oldOffset);
+
+	    inode->i_mode ^= S_IFREG;
+        inode->i_mode |= S_IFIM;
+
+        memcpy(sink, buf, oldOffset);
+	}
 }
 
 static void ext2_truncate_blocks(struct inode *inode, loff_t offset)
@@ -1182,6 +1219,7 @@ static void ext2_truncate_blocks(struct inode *inode, loff_t offset)
 		return;
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
 		return;
+
 	__ext2_truncate_blocks(inode, offset);
 }
 
