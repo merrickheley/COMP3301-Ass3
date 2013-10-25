@@ -67,15 +67,25 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     EXT2_I(inode)->i_data[0] = ext2_new_block(inode, 0, &errp);
     inode->i_blocks = 1;
 
-    /* Write the old data without any encryption */
+    /* Write the old data without any encryption
+     * Ensure the old data is written at the start of the file */
     if(filp->f_flags & O_APPEND) {
+        filp->f_flags ^= O_APPEND;
+        filp->f_flags |= O_TRUNC;
+
         oldFs = get_fs();
         set_fs(KERNEL_DS);
         do_sync_write(filp, moveBuf, moveSize, ppos);
         set_fs(oldFs);
+
+        filp->f_flags ^= O_TRUNC;
+        filp->f_flags |= O_APPEND;
+
+        /* Append the new data with encryption */
+        return do_sync_encrypt_write(filp, buf, len, ppos);
     }
 
-    /* Write the new data with encryption */
+    /* Write the old data at the start of the file */
     return do_sync_encrypt_write(filp, buf, len, ppos);
 }
 
