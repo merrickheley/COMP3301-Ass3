@@ -1109,7 +1109,7 @@ static void __ext2_truncate_blocks(struct inode *inode, loff_t offset)
 		return;
 
     /* If this is a regular file being truncated to an immediate file,
-     * truncate everything away and save the data.
+     * save the original data then truncate everything away.
      */
     if (S_ISREG(inode->i_mode) && (offset < IM_SIZE) && (offset > 0)) {
         offset = 0;
@@ -1193,10 +1193,16 @@ do_indirects:
 	 * not truncated to it */
 	if (S_ISREG(inode->i_mode) && offset == 0)  {
 
+	    /* Truncate may leave one block allocated. Ensure it is freed */
+	    if (inode->i_blocks == 1) {
+	        ext2_free_blocks(inode, i_data[0], 1);
+	    }
+
 	    /* Change the file to an immediate file */
         inode->i_mode ^= S_IFREG;
         inode->i_mode |= S_IFIM;
 
+        /* Set the properties and copy in the data */
         i_size_write(inode, oldOffset);
 	    inode->i_fop = &ext2_immediate_file_operations;
 
@@ -1218,7 +1224,7 @@ static void ext2_truncate_blocks(struct inode *inode, loff_t offset)
 	 * but that's probably too much to ask.
 	 */
 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-	    S_ISLNK(inode->i_mode) || S_ISIM(inode->i_mode)))
+	    S_ISLNK(inode->i_mode)))
 		return;
 	if (ext2_inode_is_fast_symlink(inode))
 		return;
@@ -1233,7 +1239,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
 	int error;
 
 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-	    S_ISLNK(inode->i_mode) || S_ISIM(inode->i_mode)))
+	    S_ISLNK(inode->i_mode)))
 		return -EINVAL;
 	if (ext2_inode_is_fast_symlink(inode))
 		return -EINVAL;
@@ -1531,7 +1537,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 	raw_inode->i_frag = ei->i_frag_no;
 	raw_inode->i_fsize = ei->i_frag_size;
 	raw_inode->i_file_acl = cpu_to_le32(ei->i_file_acl);
-	if (!(S_ISREG(inode->i_mode) || S_ISIM(inode->i_mode)))
+	if (!(S_ISREG(inode->i_mode)))
 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
 	else {
 		raw_inode->i_size_high = cpu_to_le32(inode->i_size >> 32);

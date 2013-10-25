@@ -47,7 +47,7 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
 
     /* Reset the inode data to 0 */
-    memset(EXT2_I(inode)->i_data, 0, moveSize);
+    memset(EXT2_I(inode)->i_data, 0, IM_SIZE);
 
     /* Set the mode */
     inode->i_mode ^= S_IFIM;

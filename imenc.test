@@ -1,0 +1,31 @@
+#Immediate/Encrypt test
+mount none /mnt/host -t hostfs -o /home/students/s4233991
+insmod /mnt/host/courses/COMP3301/ext3301/ext3301.ko
+mkdir -p /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=cafe02
+cd /mnt
+# Make the directories
+mkdir ext3301/temp
+mkdir ext3301/encrypt
+# Immediate encrypt grow
+echo "tiny file" > ext3301/encrypt/tiny.file
+cat ext3301/encrypt/tiny.file
+echo "loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong" >> ext3301/encrypt/tiny.file
+cat ext3301/encrypt/tiny.file
+# Immediate grow
+echo "tiny file" > ext3301/temp/tiny.file
+echo "loooooooooooooooooooooooooooooooooooooooooooooooooooooooooong" >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+# Immediate, grow, overwrite-trunc
+echo "abcd" > ext3301/encrypt/igt.file
+echo "longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg ggggggggggggggggggggggggggggggggggggggg" >> ext3301/encrypt/igt.file
+echo "trunc" > ext3301/encrypt/igt.file
+# Immediate, grow, posix-trunc
+echo "abcd" > ext3301/encrypt/igt2.file
+echo "longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg ggggggggggggggggggggggggggggggggggggggg" >> ext3301/encrypt/igt2.file
+host/truncate ext3301/encrypt/igt2.file
+# Immediate, grow, posix-trunc
+echo "abcd" > ext3301/encrypt/igt3.file
+cat host/long.file >> ext3301/encrypt/igt3.file
+cat host/long.file >> ext3301/encrypt/igt3.file
+host/truncate ext3301/encrypt/igt3.file

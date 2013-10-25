@@ -1,0 +1,151 @@
+#Immediate/Encrypt test
+mount none /mnt/host -t hostfs -o /home/students/s4233991
+insmod /mnt/host/courses/COMP3301/ext3301/ext3301.ko
+mkdir -p /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=cafe02
+cd /mnt
+# Make the directories
+mkdir ext3301/encrypt
+mkdir ext3301/temp
+mkdir ext3301/temp2
+
+# Test 1
+# Immediate, create (TRUNC), grow (TRUNC), shrink (TRUNC)
+echo "tiny" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 2
+# Immediate, create (TRUNC), grow (TRUNC), shrink (POSIX)
+echo "tiny" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+
+# Test 3
+# Immediate, create (TRUNC), grow (APPPEND), shrink (TRUNC)
+echo "tiny" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 4
+# Immediate, create (TRUNC), grow (APPEND), shrink (POSIX)
+echo "tiny" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+
+# Test 5
+# Immediate, create (APPEND), grow (TRUNC), shrink (TRUNC)
+echo "tiny" >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 6
+# Immediate, create (APPEND), grow (TRUNC), shrink (POSIX)
+echo "tiny" >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+
+# Test 7
+# Immediate, create (APPEND), grow (APPPEND), shrink (TRUNC)
+echo "tiny" >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 8
+# Immediate, create (APPEND), grow (APPEND), shrink (POSIX)
+echo "tiny" >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+
+# Test 9
+# Regular, create (TRUNC), shrink (TRUNC)
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 10
+# Regular, create (TRUNC), shrink (POSIX)
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+
+# Test 11
+# Regular, create (APPEND), shrink (TRUNC)
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+echo "tiny again" > ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 12
+# Regular, create (APPEND), shrink (POSIX)
+echo "spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam spam " >> ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+host/truncate ext3301/temp/tiny.file
+cat ext3301/temp/tiny.file
+rm ext3301/temp/tiny.file
+
+# Test 13
+# File move
+echo "tiny" >> ext3301/temp/tiny.file
+mv ext3301/temp/tiny.file ext3301/temp2/tiny.file
+cat ext3301/temp2/tiny.file
+rm ext3301/temp2/tiny.file
+
+# Test 14
+# Immediate encrypted file copy, move and remount
+echo "tiny" > ext3301/encrypt/tiny.file
+cat ext3301/encrypt/tiny.file
+cp ext3301/encrypt/tiny.file ext3301/encrypt/tiny2.file
+cat ext3301/encrypt/tiny2.file
+mv ext3301/encrypt/tiny2.file ext3301/temp/tiny2.file
+cat ext3301/temp/tiny2.file
+# Remount
+umount ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=cafe01
+cat ext3301/encrypt/tiny.file
+cat ext3301/temp/tiny2.file
+
+# Test 15
+# Long encrypted file copy, move and remount
+cp host/long.file ext3301/encrypt/long.file
+cat ext3301/encrypt/long.file
+cp ext3301/encrypt/long.file ext3301/encrypt/long2.file
+mv ext3301/encrypt/long2.file ext3301/temp/long.file
+diff ext3301/encrypt/long.file ext3301/temp/long.file
+# Remount
+umount ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301 -o key=babe
+diff ext3301/encrypt/long.file ext3301/temp/long.file
+
