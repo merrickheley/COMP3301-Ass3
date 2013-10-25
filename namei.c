@@ -37,6 +37,7 @@
 #include "acl.h"
 #include "xip.h"
 #include "immediate.h"
+#include "encrypt.h"
 
 static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
 {
@@ -308,6 +309,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 	struct page * old_page;
 	struct ext2_dir_entry_2 * old_de;
 	int err = -ENOENT;
+	int oldEncryptAncestor = 0;
+	int newEncryptAncestor = 0;
 
 	dquot_initialize(old_dir);
 	dquot_initialize(new_dir);
@@ -346,6 +349,17 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 			goto out_dir;
 		if (dir_de)
 			inode_inc_link_count(new_dir);
+	}
+
+	oldEncryptAncestor = is_encrypt_ancestor(old_dentry);
+	newEncryptAncestor = is_encrypt_ancestor(new_dentry);
+
+	/* Check if either folder is within ENCRYPT_DIR */
+	if ((oldEncryptAncestor && !newEncryptAncestor) ||
+	        (!oldEncryptAncestor && newEncryptAncestor)) {
+	    ext2_debug("Moving between encrypt folder");
+
+	    crypt_block(old_inode);
 	}
 
 	/*

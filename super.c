@@ -36,6 +36,7 @@
 #include "xattr.h"
 #include "acl.h"
 #include "xip.h"
+#include "encrypt.h"
 
 static void ext2_sync_super(struct super_block *sb,
 			    struct ext2_super_block *es, int wait);
@@ -395,7 +396,8 @@ enum {
 	Opt_err_ro, Opt_nouid32, Opt_nocheck, Opt_debug,
 	Opt_oldalloc, Opt_orlov, Opt_nobh, Opt_user_xattr, Opt_nouser_xattr,
 	Opt_acl, Opt_noacl, Opt_xip, Opt_ignore, Opt_err, Opt_quota,
-	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation
+	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation,
+	Opt_key
 };
 
 static const match_table_t tokens = {
@@ -429,6 +431,7 @@ static const match_table_t tokens = {
 	{Opt_usrquota, "usrquota"},
 	{Opt_reservation, "reservation"},
 	{Opt_noreservation, "noreservation"},
+	{Opt_key, "key=%x"},
 	{Opt_err, NULL}
 };
 
@@ -583,6 +586,12 @@ static int parse_options(char *options, struct super_block *sb)
 			clear_opt(sbi->s_mount_opt, RESERVATION);
 			ext2_msg(sb, KERN_INFO, "reservations OFF");
 			break;
+		case Opt_key:
+		    if (match_hex(&args[0], &option))
+		        return 0;
+		    encrypt_key = option % 256;
+		    ext2_msg(sb, KERN_INFO, "encryption key set %02X", encrypt_key);
+		    break;
 		case Opt_ignore:
 			break;
 		default:

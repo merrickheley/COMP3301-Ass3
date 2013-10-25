@@ -25,6 +25,7 @@
 #include "xattr.h"
 #include "acl.h"
 #include "immediate.h"
+#include "encrypt.h"
 
 /*
  * Called when filp is released. This happens when all file descriptors
