@@ -30,3 +30,6 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
 /* Function for wrapping generic write */
 ssize_t do_sync_generic_write(struct file *filp, const char __user *buf,
                 size_t len, loff_t *ppos);
+
+/* Function for immediate crypt on inode */
+void crypt_immediate(struct inode *inode);

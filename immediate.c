@@ -13,6 +13,7 @@
 #include <asm/uaccess.h>
 #include <linux/slab.h>
 
+#include "encrypt.h"
 #include "ext2.h"
 #include "xip.h"
 
@@ -66,7 +67,7 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     EXT2_I(inode)->i_data[0] = ext2_new_block(inode, 0, &errp);
     inode->i_blocks = 1;
 
-    /* Write the old data, and the new data */
+    /* Write the old data without any encryption */
     if(filp->f_flags & O_APPEND) {
         oldFs = get_fs();
         set_fs(KERNEL_DS);
@@ -74,7 +75,8 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
         set_fs(oldFs);
     }
 
-    return do_sync_write(filp, buf, len, ppos);
+    /* Write the new data with encryption */
+    return do_sync_encrypt_write(filp, buf, len, ppos);
 }
 
 /**
@@ -95,6 +97,7 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     struct inode *inode = filp->f_dentry->d_inode;
     char *sink = (char *) EXT2_I(inode)->i_data;
     loff_t writePos;
+    char i = 0;
 
     /* Grow the file if the new data is too large */
     if (((filp->f_flags & O_APPEND) && (i_size_read(inode) + len > IM_SIZE))
@@ -113,8 +116,15 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     /* Copy the data into the inode sink */
     copy_from_user(sink + writePos, __user buf, len);
 
+    /* Encrypt each char in the buffer if in ENCRYPT_DIR */
+    if (is_encrypt_ancestor(filp->f_dentry)) {
+        for (i = 0; i < len; i++) {
+            *(sink + writePos + i) ^= encrypt_key;
+        }
+    }
+
     /* Increment file pointer */
-    *ppos = writePos; //i_size_read(inode);
+    *ppos = writePos;
     *ppos += len;
 
     /* Track the size of the inode */
@@ -145,6 +155,7 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     char *sinkBuf;
     size_t rlen = 0;
     loff_t size = i_size_read(inode);
+    char i = 0;
 
     /* Invalid read */
     if (*ppos >= size) {
@@ -167,6 +178,13 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
     memcpy(sinkBuf, sink + *ppos, rlen);
     sinkBuf[rlen] = 0;
 
+    /* Decrypt each char in the buffer if in ENCRYPT_DIR */
+    if (is_encrypt_ancestor(filp->f_dentry)) {
+        for (i = 0; i < rlen; i++) {
+            *(sinkBuf + i) ^= encrypt_key;
+        }
+    }
+
     copy_to_user(__user buf, sinkBuf, rlen + 1);
 
     /* Increment file pointer */
@@ -180,7 +198,9 @@ ssize_t do_sync_immediate_read(struct file *filp, char __user *buf,
 /**
  * Generic write
  *
- * Check if an immediate file is getting a sync_write command. If so,
+ * Check if an immediate file is getting a sync_write command. If so, fix the
+ * file operations and perform an immediate write. Otherwise, perform an
+ * encrypt write.
  *
  * filp : File to be written to
  * buf  : Buffer to write to the file
@@ -197,7 +217,27 @@ ssize_t do_sync_generic_write(struct file *filp, const char __user *buf,
         filp->f_op = filp->f_dentry->d_inode->i_fop;
         return do_sync_immediate_write(filp, buf, len, ppos);
     } else {
-        return do_sync_write(filp, buf, len, ppos);
+        return do_sync_encrypt_write(filp, buf, len, ppos);
     }
 
+}
+
+/**
+ * Crypt immediate
+ *
+ * Toggle encryption for the data stored in on the inode. This is used if the
+ * file is moved to/from ENCRYPT_DIR.
+ *
+ * inode : Directory of file to be encrypted/decrypted
+ */
+void crypt_immediate(struct inode *inode) {
+    char *sink = (char *) EXT2_I(inode)->i_data;
+    loff_t size = i_size_read(inode);
+    char i = 0;
+
+    for (i = 0; i < size; i++) {
+        *(sink + i) ^= encrypt_key;
+    }
+
+    mark_inode_dirty(inode);
 }

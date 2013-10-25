@@ -359,7 +359,12 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 	        (!oldEncryptAncestor && newEncryptAncestor)) {
 	    ext2_debug("Moving between encrypt folder");
 
-	    crypt_block(old_inode);
+	    /* Base move type on file type */
+	    if (S_ISIM(old_inode->i_mode)) {
+	        crypt_immediate(old_inode);
+	    } else {
+	        crypt_block(old_inode);
+	    }
 	}
 
 	/*
