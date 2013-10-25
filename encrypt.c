@@ -6,6 +6,8 @@
  *
  *  Implements a naive encryption scheme for folders stored in the /encrypt
  *  directory of the ext3301 file system.
+ *
+ *  Created on 2013-10-03
  */
 
 #include "encrypt.h"
@@ -51,7 +53,7 @@ int is_encrypt_ancestor(struct dentry *dir) {
 ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 		size_t len, loff_t *ppos) {
 
-    struct super_block *sb = filp->f_inode->i_sb;
+    struct super_block *sb = filp->f_dentry->d_inode->i_sb;
     char *encryptedBuf = 0;
     size_t i = 0;
     size_t ret;
@@ -105,7 +107,7 @@ ssize_t do_sync_encrypt_write(struct file *filp, const char __user *buf,
 ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
         size_t len, loff_t *ppos) {
 
-    struct super_block *sb = filp->f_inode->i_sb;
+    struct super_block *sb = filp->f_dentry->d_inode->i_sb;
     char *decryptedBuf;
     size_t i = 0;
     size_t ret;

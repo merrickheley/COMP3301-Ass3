@@ -6,6 +6,8 @@
  *
  *  Implements a naive encryption scheme for folders stored in the /encrypt
  *  directory of the ext3301 file system.
+ *
+ *  Created on 2013-10-03
  */
 
 #include <linux/fs.h>

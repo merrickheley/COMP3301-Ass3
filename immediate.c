@@ -6,6 +6,8 @@
  *
  *  Implements immediate files. This allows the file system to use the inode
  *  structure to store files less than or equal to 60 bytes.
+ *
+ *  Created on 2013-10-23
  */
 
 #include "immediate.h"
