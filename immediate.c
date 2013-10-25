@@ -31,22 +31,30 @@
 ssize_t grow_immediate(struct file *filp, const char __user *buf,
         size_t len, loff_t *ppos) {
 
+    struct super_block *sb = filp->f_dentry->d_inode->i_sb;
     struct inode *inode = filp->f_dentry->d_inode;
-    char moveBuf[IM_SIZE];
+    char *moveBuf;
     loff_t moveSize = i_size_read(inode);
-    loff_t writePos = 0;
     int errp = 0;
     mm_segment_t oldFs;
-    char i = 0;
 
+    /* Allocate memory for the buffer */
+    if ((moveBuf = kmalloc(moveSize, GFP_NOFS)) == 0) {
+        ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
+    }
+
+    // Tried copy to user here
     memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
+
+    /* Reset the inode data to 0 */
+    memset(EXT2_I(inode)->i_data, 0, moveSize);
 
     /* Set the mode */
     inode->i_mode ^= S_IFIM;
     inode->i_mode |= S_IFREG;
 
     /* Set the inode operations, taken straight from original ext2_create */
-    if (ext2_use_xip(inode->i_sb)) {
+    if (ext2_use_xip(ino.de->i_sb)) {
       inode->i_mapping->a_ops = &ext2_aops_xip;
       inode->i_fop = &ext2_xip_file_operations;
     } else if (test_opt(inode->i_sb, NOBH)) {
@@ -80,10 +88,9 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
 
         filp->f_flags ^= O_TRUNC;
         filp->f_flags |= O_APPEND;
-
-        /* Append the new data with encryption */
-        return do_sync_encrypt_write(filp, buf, len, ppos);
     }
+
+    kfree(moveBuf);
 
     /* Write the old data at the start of the file */
     return do_sync_encrypt_write(filp, buf, len, ppos);
@@ -103,7 +110,6 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
 ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
                 size_t len, loff_t *ppos) {
 
-    struct super_block *sb = filp->f_dentry->d_inode->i_sb;
     struct inode *inode = filp->f_dentry->d_inode;
     char *sink = (char *) EXT2_I(inode)->i_data;
     loff_t writePos;

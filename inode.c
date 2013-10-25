@@ -1218,7 +1218,7 @@ static void ext2_truncate_blocks(struct inode *inode, loff_t offset)
 	 * but that's probably too much to ask.
 	 */
 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-	    S_ISLNK(inode->i_mode)))
+	    S_ISLNK(inode->i_mode) || S_ISIM(inode->i_mode)))
 		return;
 	if (ext2_inode_is_fast_symlink(inode))
 		return;
@@ -1233,7 +1233,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
 	int error;
 
 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-	    S_ISLNK(inode->i_mode)))
+	    S_ISLNK(inode->i_mode) || S_ISIM(inode->i_mode)))
 		return -EINVAL;
 	if (ext2_inode_is_fast_symlink(inode))
 		return -EINVAL;
@@ -1531,7 +1531,7 @@ static int __ext2_write_inode(struct inode *inode, int do_sync)
 	raw_inode->i_frag = ei->i_frag_no;
 	raw_inode->i_fsize = ei->i_frag_size;
 	raw_inode->i_file_acl = cpu_to_le32(ei->i_file_acl);
-	if (!S_ISREG(inode->i_mode))
+	if (!(S_ISREG(inode->i_mode) || S_ISIM(inode->i_mode)))
 		raw_inode->i_dir_acl = cpu_to_le32(ei->i_dir_acl);
 	else {
 		raw_inode->i_size_high = cpu_to_le32(inode->i_size >> 32);
