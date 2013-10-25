@@ -130,7 +130,7 @@ ssize_t do_sync_encrypt_read(struct file *filp, char __user *buf,
 
         /* Decrypt each char in the buffer */
         for (i = 0; i < len; i++) {
-            decryptedBuf[i] ^= encrypt_key;
+            *(decryptedBuf + i) ^= encrypt_key;
         }
 
         /* Set the buffer */

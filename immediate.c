@@ -43,7 +43,7 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
         ext2_error(sb, KERN_CRIT, "Failed to allocate memory");
     }
 
-    // Tried copy to user here
+    /* Get the data */
     memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
 
     /* Reset the inode data to 0 */
