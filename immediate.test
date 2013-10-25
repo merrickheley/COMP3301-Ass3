@@ -1,0 +1,44 @@
+#Immediate file test
+mount none /mnt/host -t hostfs -o /home/students/s4233991
+insmod /mnt/host/courses/COMP3301/ext3301/ext3301.ko
+mkdir -p /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301
+cd /mnt
+# Make the directories
+mkdir ext3301/temp
+# Test some reads and writes
+echo "check immediate file" > ext3301/temp/raw.file
+cat ext3301/temp/raw.file
+echo "01234567890123456789012345678901234567890123456789012345678" > ext3301/temp/max.file
+cat ext3301/temp/max.file
+# Test immediate file append
+echo 'abcded' >> ext3301/temp/append.file
+echo 'hijjjj' >> ext3301/temp/append.file
+cat ext3301/temp/append.file
+# Test regular file creation
+echo "012345678901234567890123456789012345678901234567890123456789" > ext3301/temp/reg.file
+cat ext3301/temp/reg.file
+# Test immediate file growing
+echo "this can be stored in the inode" > ext3301/temp/grow.file
+echo "but not anymore, because it's grown too long" >> ext3301/temp/grow.file
+cat ext3301/temp/grow.file
+# Test overwrite to immediate
+echo "reg file to immediate" > ext3301/temp/reg.file
+cat ext3301/temp/reg.file
+# Posix Truncate test
+echo "012345678901234567890123456789012345678901234567890123456789" > ext3301/temp/trunc.file
+host/truncate ext3301/temp/trunc.file
+cat ext3301/temp/trunc.file
+
+gi immediate file test
+mount none /mnt/host -t hostfs -o /home/students/s4233991
+insmod /mnt/host/courses/COMP3301/ext3301/ext3301.ko
+mkdir -p /mnt/ext3301
+mount -t ext3301 /dev/ubdb /mnt/ext3301
+cd /mnt
+mkdir ext3301/temp
+# Test immediate file growing
+echo "this can be stored in the inode" > ext3301/temp/grow.file
+echo "but not anymore, because it's grown too long" >> ext3301/temp/grow.file
+cat ext3301/temp/grow.file
+echo "this can be stored in the inode" > ext3301/temp/grow.file
