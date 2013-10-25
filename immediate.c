@@ -10,6 +10,7 @@
 
 #include "immediate.h"
 
+#include <asm/uaccess.h>
 #include <linux/slab.h>
 
 #include "ext2.h"
@@ -33,6 +34,9 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     char moveBuf[IM_SIZE];
     loff_t moveSize = i_size_read(inode);
     loff_t writePos = 0;
+    int errp = 0;
+    mm_segment_t oldFs;
+    char i = 0;
 
     memcpy(moveBuf, EXT2_I(inode)->i_data, moveSize);
 
@@ -58,8 +62,18 @@ ssize_t grow_immediate(struct file *filp, const char __user *buf,
     /* Reset the file operations */
     filp->f_op = inode->i_fop;
 
+    /* Initialise a new block */
+    EXT2_I(inode)->i_data[0] = ext2_new_block(inode, 0, &errp);
+    inode->i_blocks = 1;
+
     /* Write the old data, and the new data */
-    do_sync_write(filp, moveBuf, moveSize, &writePos);
+    if(filp->f_flags & O_APPEND) {
+        oldFs = get_fs();
+        set_fs(KERNEL_DS);
+        do_sync_write(filp, moveBuf, moveSize, ppos);
+        set_fs(oldFs);
+    }
+
     return do_sync_write(filp, buf, len, ppos);
 }
 
@@ -83,7 +97,9 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     loff_t writePos;
 
     /* Grow the file if the new data is too large */
-    if (i_size_read(inode) + len > IM_SIZE) {
+    if (((filp->f_flags & O_APPEND) && (i_size_read(inode) + len > IM_SIZE))
+            || (len > IM_SIZE)) {
+
         return grow_immediate(filp, buf, len, ppos);
     }
 
@@ -98,7 +114,7 @@ ssize_t do_sync_immediate_write(struct file *filp, const char __user *buf,
     copy_from_user(sink + writePos, __user buf, len);
 
     /* Increment file pointer */
-    *ppos = i_size_read(inode);
+    *ppos = writePos; //i_size_read(inode);
     *ppos += len;
 
     /* Track the size of the inode */

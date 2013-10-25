@@ -1192,14 +1192,19 @@ do_indirects:
 	/* Change the file to an immediate file, and add the data that was
 	 * not truncated to it */
 	if (S_ISREG(inode->i_mode) && offset == 0)  {
-	    inode->i_fop = &ext2_immediate_file_operations;
-	    i_size_write(inode, oldOffset);
 
-	    inode->i_mode ^= S_IFREG;
+	    /* Change the file to an immediate file */
+        inode->i_mode ^= S_IFREG;
         inode->i_mode |= S_IFIM;
 
+        i_size_write(inode, oldOffset);
+	    inode->i_fop = &ext2_immediate_file_operations;
+
         memcpy(sink, buf, oldOffset);
+
+        mark_inode_dirty(inode);
 	}
+
 }
 
 static void ext2_truncate_blocks(struct inode *inode, loff_t offset)
